@@ -206,13 +206,7 @@ export class HomePage implements OnInit {
     });
     await loading.present();
 
-     let httpOptions = {
-      headers: new HttpHeaders({
-        'Access-Control-Allow-Origin': '*',
-      })
-    };
-
-    this.http.post("http://192.168.51.190/upload/upload.php", formData, httpOptions)
+    this.http.post("http://192.168.51.190/upload/upload.php", formData)
       .pipe(
         finalize(() => {
           loading.dismiss();
@@ -225,16 +219,16 @@ export class HomePage implements OnInit {
         } else {
           this.presentToast('File upload failed.')
         }
-      }, 
-      (err: HttpErrorResponse) => {
-        if (err.error instanceof Error) {
-          //A client-side or network error occurred.				 
-          console.log('An error occurred:', err.error.message);
-        } else {
-          //Backend returns unsuccessful response codes such as 404, 500 etc.				 
-          console.log('Backend returned status code: ', err.status);
-          console.log('Response body:', err.error);
-        }
-      });
+      },
+        (err: HttpErrorResponse) => {
+          if (err.error instanceof Error) {
+            //A client-side or network error occurred.				 
+            console.log('An error occurred:', err.error.message);
+          } else {
+            //Backend returns unsuccessful response codes such as 404, 500 etc.				 
+            console.log('Backend returned status code: ', err.status);
+            console.log('Response body:', err.error);
+          }
+        });
   }
 }
