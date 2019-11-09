@@ -15,6 +15,8 @@ import { Camera } from '@ionic-native/camera/ngx'
 import { File } from '@ionic-native/file/ngx';
 import { FilePath } from '@ionic-native/file-path/ngx';
 import { WebView } from '@ionic-native/ionic-webview/ngx';
+import { FileTransfer } from '@ionic-native/file-transfer/ngx';
+import { Base64 } from '@ionic-native/base64/ngx';
 
 @NgModule({
   declarations: [AppComponent],
@@ -30,7 +32,7 @@ import { WebView } from '@ionic-native/ionic-webview/ngx';
     StatusBar,
     SplashScreen,
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
-    Camera, File, WebView, FilePath
+    Camera, File, WebView, FilePath, FileTransfer, Base64
   ],
   bootstrap: [AppComponent]
 })

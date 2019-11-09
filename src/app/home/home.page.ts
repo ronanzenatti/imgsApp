@@ -2,12 +2,12 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Camera, CameraOptions, PictureSourceType } from '@ionic-native/camera/ngx';
 import { ActionSheetController, ToastController, Platform, LoadingController } from '@ionic/angular';
 import { File, FileEntry } from '@ionic-native/file/ngx';
+import { FileTransfer, FileUploadOptions, FileTransferObject } from '@ionic-native/file-transfer/ngx';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { WebView } from '@ionic-native/ionic-webview/ngx';
 import { Storage } from '@ionic/storage';
 import { FilePath } from '@ionic-native/file-path/ngx';
-
-import { finalize } from 'rxjs/operators';
+import { Base64 } from '@ionic-native/base64/ngx';
 
 const STORAGE_KEY = 'my_images';
 
@@ -31,7 +31,9 @@ export class HomePage implements OnInit {
     private plt: Platform,
     private loadingController: LoadingController,
     private ref: ChangeDetectorRef,
-    private filePath: FilePath) { }
+    private filePath: FilePath,
+    private transfer: FileTransfer,
+    private base64: Base64) { }
 
   ngOnInit() {
     this.plt.ready().then(() => {
@@ -179,56 +181,78 @@ export class HomePage implements OnInit {
   startUpload(imgEntry) {
     this.file.resolveLocalFilesystemUrl(imgEntry.filePath)
       .then(entry => {
-        (<FileEntry>entry).file(file => this.readFile(file))
+        (<FileEntry>entry).file(file => this.base64encode(imgEntry, file));
       })
       .catch(err => {
         this.presentToast('Error while reading file.');
       });
   }
 
-  readFile(file: any) {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const formData = new FormData();
-      const imgBlob = new Blob([reader.result], {
-        type: file.type
-      });
-      console.log('type: ', file.type, ' - name: ', file.name);
-      formData.append('file', imgBlob, file.name);
-      this.uploadImageData(formData);
-    };
-    reader.readAsArrayBuffer(file);
+  base64encode(imgEntry, file) {
+    this.base64.encodeFile(imgEntry.filePath).then((base64File: string) => {
+      this.uploadPic(base64File, file.name);
+    }, (err) => {
+      console.log(err);
+    });
   }
+  /*
+    async uploadImageData(formData: FormData) {
+      const loading = await this.loadingController.create({
+        message: 'Uploading image...',
+      });
+      await loading.present();
+  
+      this.http.post("http://ronanzenatti.com/uploadapp/upload.php", formData)
+        .pipe(
+          finalize(() => {
+            loading.dismiss();
+          })
+        )
+        .subscribe(res => {
+          console.log('res: ', res);
+          if (res['success']) {
+            this.presentToast('File upload complete.')
+          } else {
+            this.presentToast('File upload failed.')
+          }
+        },
+          (err: HttpErrorResponse) => {
+            if (err.error instanceof Error) {
+              //A client-side or network error occurred.				 
+              console.log('An error occurred:', err.error.message);
+            } else {
+              //Backend returns unsuccessful response codes such as 404, 500 etc.				 
+              console.log('Backend returned status code: ', err.status);
+              console.log('Response body:', err.error);
+            }
+          });
+    }*/
 
-  async uploadImageData(formData: FormData) {
+  async uploadPic(base64img: string, fileName: string) {
+
     const loading = await this.loadingController.create({
       message: 'Uploading image...',
     });
     await loading.present();
 
-    this.http.post("http://192.168.51.190/upload/upload.php", formData)
-      .pipe(
-        finalize(() => {
-          loading.dismiss();
-        })
-      )
-      .subscribe(res => {
-        console.log('res: ', res);
-        if (res['success']) {
-          this.presentToast('File upload complete.')
-        } else {
-          this.presentToast('File upload failed.')
-        }
-      },
-        (err: HttpErrorResponse) => {
-          if (err.error instanceof Error) {
-            //A client-side or network error occurred.				 
-            console.log('An error occurred:', err.error.message);
-          } else {
-            //Backend returns unsuccessful response codes such as 404, 500 etc.				 
-            console.log('Backend returned status code: ', err.status);
-            console.log('Response body:', err.error);
-          }
-        });
+    const fileTransfer: FileTransferObject = this.transfer.create();
+
+    let options: FileUploadOptions = {
+      fileKey: "file",
+      fileName: fileName,
+      chunkedMode: false,
+      mimeType: "image/jpeg",
+      headers: {}
+    }
+
+    fileTransfer.upload(base64img, 'http://ronanzenatti.com/uploadapp/upload.php', options).then(data => {
+      //alert(JSON.stringify(data));
+      loading.dismiss();
+      this.presentToast('File upload complete.');
+    }, error => {
+      alert("error");
+      alert("error :" + JSON.stringify(error));
+      loading.dismiss();
+    });
   }
 }
